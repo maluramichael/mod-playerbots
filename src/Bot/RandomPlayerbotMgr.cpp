@@ -21,6 +21,7 @@
 #include "FleeManager.h"
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
+#include "GuildMgr.h"
 #include "LFGMgr.h"
 #include "MapMgr.h"
 #include "NewRpgInfo.h"
@@ -2790,6 +2791,22 @@ void RandomPlayerbotMgr::OnBotLoginInternal(Player* const bot)
     }
 
     RandomPlayerbotFactory::AssignBotToArenaTeam(bot);
+
+    // Telemetry: if the bot is now actually in a guild (InitGuild may have placed it),
+    // emit guild_join so the manager's bot_guild table is populated. Field keys are a
+    // fixed contract with the backend consumer — do not rename.
+    if (uint32 gid = bot->GetGuildId())
+    {
+        std::string gname;
+        if (Guild* g = sGuildMgr->GetGuildById(gid))
+            gname = g->GetName();
+        DadTelemetryBridge::Emit("guild_join", {
+            {"bot",        std::to_string(bot->GetGUID().GetCounter())},
+            {"name",       bot->GetName()},
+            {"guild_id",   std::to_string(gid)},
+            {"guild_name", gname},
+        });
+    }
 
     if (sPlayerbotAIConfig.randomBotFixedLevel)
     {
