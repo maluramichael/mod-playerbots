@@ -12,6 +12,7 @@
 #include "ObjectGuid.h"
 #include "PlayerbotCommandServer.h"
 #include "PlayerbotMgr.h"
+#include <queue>
 #include <unordered_set>
 
 struct BattlegroundInfo
@@ -103,6 +104,12 @@ public:
 
     uint32 activeBots = 0;
     static bool HandlePlayerbotConsoleCommand(ChatHandler* handler, char const* args);
+    // DadMode: GM maintenance / batch controls (see DadTelemetryBridge / CLAUDE.md).
+    static bool HandleForceGrindCommand(ChatHandler* handler, char const* args);
+    // Queues every online random bot for batched removal; returns how many were queued.
+    uint32 QueuePurgeAllRandomBots();
+    // Toggles the "grind" non-combat strategy on every online random bot; returns count affected.
+    uint32 ForceGrindAll(bool on);
     bool IsRandomBot(Player* bot);
     bool IsRandomBot(ObjectGuid::LowType bot);
     bool IsAddclassBot(Player* bot);
@@ -250,6 +257,9 @@ private:
     std::map<TeamId, std::map<BattlegroundTypeId, std::vector<uint32>>> BattleMastersCache;
     std::unordered_map<uint32, BotEventCache> eventCache;
     std::unordered_set<uint32> currentBots;
+    // DadMode purge: bot GUID counters awaiting removal, drained N per world tick.
+    std::queue<uint32> purgeQueue;
+    void ProcessPurgeQueue();
     uint32 playersLevel;
 
     // Account lists

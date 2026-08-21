@@ -6,6 +6,7 @@
 
 #include "DropQuestAction.h"
 #include "ChatHelper.h"
+#include "DadTelemetryBridge.h"
 #include "Event.h"
 #include "PlayerbotTextMgr.h"
 #include "Playerbots.h"
@@ -46,6 +47,13 @@ bool DropQuestAction::Execute(Event event)
 
     bot->RemoveRewardedQuest(entry);
     bot->RemoveActiveQuest(entry, false);
+
+    if (Quest const* dropped = sObjectMgr->GetQuestTemplate(entry))
+        DadTelemetryBridge::Emit("bot_quest", {{"bot", std::to_string(bot->GetGUID().GetCounter())},
+                                               {"name", bot->GetName()},
+                                               {"quest", dropped->GetTitle()},
+                                               {"state", "abandon"},
+                                               {"reason", "gave up: dropped"}});
 
     if (botAI->HasStrategy("debug quest", BotState::BOT_STATE_NON_COMBAT) || botAI->HasStrategy("debug rpg", BotState::BOT_STATE_COMBAT))
     {

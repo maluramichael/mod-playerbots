@@ -12,6 +12,8 @@
 #include "Cell.h"
 #include "CellImpl.h"
 #include "ChannelMgr.h"
+#include "Config.h"
+#include "DadTelemetryBridge.h"
 #include "DBCStores.h"
 #include "DBCStructure.h"
 #include "DatabaseEnv.h"
@@ -285,6 +287,11 @@ void RandomPlayerbotMgr::UpdateAIInternal(uint32 /*elapsed*/, bool /*minimal*/)
         totalPmo->finish();
 
     totalPmo = sPerfMonitor.start(PERF_MON_TOTAL, "RandomPlayerbotMgr::FullTick");
+
+    // DadMode: drain the GM purge queue in small batches on every tick, regardless of
+    // the autologin/enabled gates below (a maintenance operation must keep making
+    // progress even if bot autologin is off).
+    ProcessPurgeQueue();
 
     if (!sPlayerbotAIConfig.randomBotAutologin || !sPlayerbotAIConfig.enabled)
         return;
@@ -2465,7 +2472,7 @@ void RandomPlayerbotMgr::SetValue(Player* bot, std::string const& type, uint32 v
     SetValue(bot->GetGUID().GetCounter(), type, value, data);
 }
 
-bool RandomPlayerbotMgr::HandlePlayerbotConsoleCommand(ChatHandler* /*handler*/, char const* args)
+bool RandomPlayerbotMgr::HandlePlayerbotConsoleCommand(ChatHandler* handler, char const* args)
 {
     if (!sPlayerbotAIConfig.enabled)
     {
@@ -2475,11 +2482,35 @@ bool RandomPlayerbotMgr::HandlePlayerbotConsoleCommand(ChatHandler* /*handler*/,
 
     if (!args || !*args)
     {
-        LOG_ERROR("playerbots", "Usage: rndbot stats/update/reset/init/refresh/add/remove");
+        LOG_ERROR("playerbots", "Usage: rndbot stats/update/reset/init/refresh/add/remove/purge");
         return false;
     }
 
     std::string const cmd = args;
+
+    // DadMode GM maintenance: remove ALL random bots. This is always available (not
+    // gated by DadMode.Enabled) but requires the literal "confirm" token so it can
+    // never fire by accident. Removal is queued and drained in batches over world
+    // ticks (see ProcessPurgeQueue) so 500 bots never leave synchronously.
+    if (cmd == "purge confirm")
+    {
+        uint32 queued = sRandomPlayerbotMgr.QueuePurgeAllRandomBots();
+        if (handler)
+            handler->PSendSysMessage("Purge: queued %u random bots for removal (batched over world ticks).", queued);
+        LOG_INFO("playerbots", "DadMode purge: queued {} random bots for removal.", queued);
+
+        DadTelemetryBridge::Emit("purge", {{"count", std::to_string(queued)}});
+        return true;
+    }
+
+    if (cmd == "purge")
+    {
+        if (handler)
+            handler->PSendSysMessage(
+                "Refusing: use '.playerbots rndbot purge confirm' to remove ALL random bots.");
+        LOG_INFO("playerbots", "DadMode purge requested without the 'confirm' token; ignored.");
+        return true;
+    }
 
     if (cmd == "reset")
     {
@@ -2587,6 +2618,108 @@ bool RandomPlayerbotMgr::HandlePlayerbotConsoleCommand(ChatHandler* /*handler*/,
     return true;
 }
 
+uint32 RandomPlayerbotMgr::QueuePurgeAllRandomBots()
+{
+    uint32 count = 0;
+    for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
+    {
+        Player* bot = it->second;
+        if (!bot)
+            continue;
+
+        if (!IsRandomBot(bot))
+            continue;
+
+        purgeQueue.push(bot->GetGUID().GetCounter());
+        ++count;
+    }
+
+    return count;
+}
+
+void RandomPlayerbotMgr::ProcessPurgeQueue()
+{
+    if (purgeQueue.empty())
+        return;
+
+    int32 perTick = sConfigMgr->GetOption<int32>("DadMode.Purge.PerTick", 20);
+    if (perTick <= 0)
+        perTick = 20;
+
+    uint32 processed = 0;
+    while (!purgeQueue.empty() && processed < static_cast<uint32>(perTick))
+    {
+        uint32 botId = purgeQueue.front();
+        purgeQueue.pop();
+        ++processed;
+
+        ObjectGuid guid = ObjectGuid::Create<HighGuid::Player>(botId);
+        Player* bot = ObjectAccessor::FindPlayer(guid);
+        if (bot)
+            Remove(bot);  // reuse the existing removal path (DB cleanup + logout)
+    }
+
+    LOG_INFO("playerbots", "DadMode purge: removed {} bot(s) this tick, {} remaining.", processed,
+             static_cast<uint32>(purgeQueue.size()));
+}
+
+uint32 RandomPlayerbotMgr::ForceGrindAll(bool on)
+{
+    uint32 count = 0;
+    for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
+    {
+        Player* bot = it->second;
+        if (!bot)
+            continue;
+
+        PlayerbotAI* botAI = GET_PLAYERBOT_AI(bot);
+        if (!botAI)
+            continue;
+
+        botAI->ChangeStrategy(on ? "+grind" : "-grind", BOT_STATE_NON_COMBAT);
+        ++count;
+    }
+
+    return count;
+}
+
+bool RandomPlayerbotMgr::HandleForceGrindCommand(ChatHandler* handler, char const* args)
+{
+    if (!sConfigMgr->GetOption<bool>("DadMode.Enabled", false))
+    {
+        if (handler)
+            handler->PSendSysMessage("DadMode is disabled; '.playerbots forcegrind' is unavailable.");
+        return true;
+    }
+
+    std::string arg = args ? args : "";
+    // trim leading/trailing whitespace
+    size_t b = arg.find_first_not_of(" \t");
+    size_t e = arg.find_last_not_of(" \t");
+    arg = (b == std::string::npos) ? "" : arg.substr(b, e - b + 1);
+
+    bool on = true;
+    if (arg == "off" || arg == "0")
+        on = false;
+    else if (arg.empty() || arg == "on" || arg == "1")
+        on = true;
+    else
+    {
+        if (handler)
+            handler->PSendSysMessage("Usage: .playerbots forcegrind [on|off]");
+        return true;
+    }
+
+    uint32 count = sRandomPlayerbotMgr.ForceGrindAll(on);
+    if (handler)
+        handler->PSendSysMessage("Force-grind %s applied to %u random bot(s).", on ? "ON" : "OFF", count);
+    LOG_INFO("playerbots", "DadMode force-grind {} applied to {} random bot(s).", on ? "ON" : "OFF", count);
+
+    DadTelemetryBridge::Emit("forcegrind",
+                             {{"state", on ? "on" : "off"}, {"count", std::to_string(count)}});
+    return true;
+}
+
 void RandomPlayerbotMgr::HandleCommand(uint32 type, std::string const text, Player* fromPlayer, std::string channelName)
 {
     for (PlayerBotMap::const_iterator it = GetPlayerBotsBegin(); it != GetPlayerBotsEnd(); ++it)
@@ -2647,7 +2780,10 @@ void RandomPlayerbotMgr::OnBotLoginInternal(Player* const bot)
     }
 
     // Run guild recovery/assignment at login to handle empty guild tables after restart.
-    if (sPlayerbotAIConfig.randomBotGuildCount > 0)
+    // DadMode.Bots.ForceGuildJoin forces the join even when RandomBotGuildCount is 0.
+    bool const dadMode = sConfigMgr->GetOption<bool>("DadMode.Enabled", false);
+    bool const dadForceGuild = dadMode && sConfigMgr->GetOption<bool>("DadMode.Bots.ForceGuildJoin", false);
+    if (sPlayerbotAIConfig.randomBotGuildCount > 0 || dadForceGuild)
     {
         PlayerbotFactory factory(bot, bot->GetLevel());
         factory.InitGuild();
@@ -2662,6 +2798,15 @@ void RandomPlayerbotMgr::OnBotLoginInternal(Player* const bot)
     else
     {
         bot->RemovePlayerFlag(PLAYER_FLAGS_NO_XP_GAIN);
+    }
+
+    // DadMode: turn on the existing gathering-node looting strategy at login so bots
+    // harvest herbs/ore/skins while they roam. Off by default; no behavior change unless
+    // both DadMode.Enabled and DadMode.Bots.GatherEnabled are set.
+    if (dadMode && sConfigMgr->GetOption<bool>("DadMode.Bots.GatherEnabled", false))
+    {
+        if (PlayerbotAI* botAI = GET_PLAYERBOT_AI(bot))
+            botAI->ChangeStrategy("+gather", BOT_STATE_NON_COMBAT);
     }
 }
 
