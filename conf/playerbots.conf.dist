@@ -2697,3 +2697,30 @@ AiPlayerbot.TargetPosRecalcDistance = 0.1
 
 # Allow bots to be summoned near innkeepers
 AiPlayerbot.SummonAtInnkeepersEnabled = 1
+
+###################################################################################################
+# DAD MODE (mod-playerbots side)
+#
+#    NOTE: The master switch "DadMode.Enabled" is declared in mod-bot-economy, NOT here. All keys
+#    below additionally require DadMode.Enabled = 1 to have any effect. With DadMode off (or the
+#    keys left at their defaults) stock playerbots behavior is unchanged.
+#
+#    DadMode.Bots.ForceGuildJoin
+#        Force random bots to join a guild at login even when AiPlayerbot.RandomBotGuildCount is 0.
+#        Default: 0 (off)
+#
+#    DadMode.Bots.GatherEnabled
+#        Enable the existing "gather" non-combat strategy on random bots at login so they harvest
+#        herb/ore/skinning nodes while roaming.
+#        Default: 0 (off)
+#
+#    DadMode.Purge.PerTick
+#        Batch size for the ".playerbots rndbot purge confirm" GM command: how many random bots are
+#        removed per world tick while draining the purge queue (avoids removing all 500 at once).
+#        The purge command itself is always available and is NOT gated by DadMode.Enabled.
+#        Default: 20
+###################################################################################################
+
+DadMode.Bots.ForceGuildJoin = 0
+DadMode.Bots.GatherEnabled = 0
+DadMode.Purge.PerTick = 20

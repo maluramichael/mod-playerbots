@@ -5,6 +5,7 @@
  */
 
 #include "GrindTargetValue.h"
+#include "Config.h"
 #include "NewRpgInfo.h"
 #include "Playerbots.h"
 #include "ReputationMgr.h"
@@ -55,6 +56,10 @@ Unit* GrindTargetValue::FindTargetForGrinding(uint32 assistCount)
     Unit* result = nullptr;
     std::unordered_map<uint32, bool> needForQuestMap;
 
+    // DadMode: keep grinding bots on plain, killable hostiles only. Read once per
+    // selection pass (cheap config lookup); default OFF leaves stock behavior intact.
+    bool const dadMode = sConfigMgr->GetOption<bool>("DadMode.Enabled", false);
+
     for (ObjectGuid const guid : targets)
     {
         Unit* unit = botAI->GetUnit(guid);
@@ -63,6 +68,31 @@ Unit* GrindTargetValue::FindTargetForGrinding(uint32 assistCount)
 
         if (!unit->IsInWorld() || unit->IsDuringRemoveFromWorld())
             continue;
+
+        if (dadMode)
+        {
+            // Only attack things actually hostile to the bot (skip neutral/friendly).
+            if (!bot->IsHostileTo(unit))
+                continue;
+
+            if (Creature* creature = unit->ToCreature())
+            {
+                if (creature->IsCritter())
+                    continue;
+
+                if (CreatureTemplate const* ct = creature->GetCreatureTemplate())
+                {
+                    // Skip civilians (quest/townsfolk) and anything tougher than a
+                    // normal mob: elites, rare-elites and world bosses.
+                    if (ct->flags_extra & CREATURE_FLAG_EXTRA_CIVILIAN)
+                        continue;
+
+                    if (ct->rank == CREATURE_ELITE_ELITE || ct->rank == CREATURE_ELITE_RAREELITE ||
+                        ct->rank == CREATURE_ELITE_WORLDBOSS)
+                        continue;
+                }
+            }
+        }
 
         if (unit->ToCreature() && !unit->ToCreature()->GetCreatureTemplate()->lootid &&
             bot->GetReactionTo(unit) >= REP_NEUTRAL)
