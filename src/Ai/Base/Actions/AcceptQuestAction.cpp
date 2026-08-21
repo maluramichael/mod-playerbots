@@ -5,7 +5,6 @@
  */
 
 #include "AcceptQuestAction.h"
-#include "DadTelemetryBridge.h"
 #include "Event.h"
 #include "PlayerbotTextMgr.h"
 #include "Playerbots.h"
@@ -16,12 +15,6 @@ bool AcceptAllQuestsAction::ProcessQuest(Quest const* quest, Object* questGiver)
 
     auto text_quest = ChatHelper::FormatQuest(quest);
     bot->PlayDistanceSound(620);
-
-    DadTelemetryBridge::Emit("bot_quest", {{"bot", std::to_string(bot->GetGUID().GetCounter())},
-                                           {"name", bot->GetName()},
-                                           {"quest", quest ? quest->GetTitle() : ""},
-                                           {"state", "accept"},
-                                           {"reason", "auto-accept nearby"}});
 
     if (botAI->HasStrategy("debug quest", BotState::BOT_STATE_NON_COMBAT) || botAI->HasStrategy("debug rpg", BotState::BOT_STATE_COMBAT))
     {
