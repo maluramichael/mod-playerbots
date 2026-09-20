@@ -378,6 +378,9 @@ public:
     std::string autoPickReward;
     bool autoEquipUpgradeLoot;
     float equipUpgradeThreshold;
+    bool autoVendorEnabled;
+    float autoVendorRange;
+    uint32 autoVendorCooldownSec;
     bool twoRoundsGearInit;
     bool syncQuestWithPlayer;
     bool syncQuestForPlayer;

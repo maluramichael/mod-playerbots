@@ -7,6 +7,7 @@
 #ifndef PLAYERBOTS_TRIGGERCONTEXT_H
 #define PLAYERBOTS_TRIGGERCONTEXT_H
 
+#include "AutoVendorTrigger.h"
 #include "CureTriggers.h"
 #include "FishingTriggers.h"
 #include "GenericTriggers.h"
@@ -154,6 +155,7 @@ public:
         creators["far from master"] = &TriggerContext::far_from_master;
         creators["far from loot target"] = &TriggerContext::far_from_loot_target;
         creators["can loot"] = &TriggerContext::can_loot;
+        creators["auto vendor needed"] = &TriggerContext::auto_vendor_needed;
         creators["swimming"] = &TriggerContext::swimming;
         creators["target changed"] = &TriggerContext::target_changed;
 
@@ -297,6 +299,7 @@ private:
     static Trigger* pull_end(PlayerbotAI* botAI) { return new PullEndTrigger(botAI); }
     static Trigger* return_to_pull_position(PlayerbotAI* botAI) { return new ReturnToPullPositionTrigger(botAI); }
     static Trigger* can_loot(PlayerbotAI* botAI) { return new CanLootTrigger(botAI); }
+    static Trigger* auto_vendor_needed(PlayerbotAI* botAI) { return new AutoVendorNeededTrigger(botAI); }
     static Trigger* far_from_loot_target(PlayerbotAI* botAI) { return new FarFromCurrentLootTrigger(botAI); }
     static Trigger* far_from_master(PlayerbotAI* botAI) { return new FarFromMasterTrigger(botAI); }
     static Trigger* behind_target(PlayerbotAI* botAI) { return new IsBehindTargetTrigger(botAI); }

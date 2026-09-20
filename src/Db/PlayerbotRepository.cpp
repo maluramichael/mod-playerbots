@@ -36,6 +36,13 @@ void PlayerbotRepository::Load(PlayerbotAI* botAI)
                 botAI->ClearStrategies(BOT_STATE_NON_COMBAT);
                 botAI->ChangeStrategy("+chat", BOT_STATE_NON_COMBAT);
                 botAI->ChangeStrategy(value, BOT_STATE_NON_COMBAT);
+
+                // The stored list replaces the defaults, so bots saved before "auto vendor" existed would never get
+                // it. A stored list cannot tell "removed on purpose" from "never had it": use
+                // AiPlayerbot.AutoVendor.Enable to switch the feature off.
+                if (sPlayerbotAIConfig.autoVendorEnabled && IsRealPlayer(botAI->GetMaster()) &&
+                    !botAI->GetBot()->InBattleground())
+                    botAI->ChangeStrategy("+auto vendor", BOT_STATE_NON_COMBAT);
             }
             else if (key == "dead")
                 botAI->ChangeStrategy(value, BOT_STATE_DEAD);

@@ -15,6 +15,7 @@
 #include "AttackerCountValues.h"
 #include "AttackerWithoutAuraTargetValue.h"
 #include "AttackersValue.h"
+#include "AutoVendorValues.h"
 #include "AvailableLootValue.h"
 #include "BudgetValues.h"
 #include "CcTargetValue.h"
@@ -181,6 +182,7 @@ public:
         creators["loot strategy"] = &ValueContext::loot_strategy;
         creators["last movement"] = &ValueContext::last_movement;
         creators["stay time"] = &ValueContext::stay_time;
+        creators["auto vendor state"] = &ValueContext::auto_vendor_state;
         creators["last taxi"] = &ValueContext::last_movement;
         creators["last area trigger"] = &ValueContext::last_movement;
         creators["distance"] = &ValueContext::distance;
@@ -391,6 +393,7 @@ private:
     static UntypedValue* distance(PlayerbotAI* botAI) { return new DistanceValue(botAI); }
     static UntypedValue* last_movement(PlayerbotAI* botAI) { return new LastMovementValue(botAI); }
     static UntypedValue* stay_time(PlayerbotAI* botAI) { return new StayTimeValue(botAI); }
+    static UntypedValue* auto_vendor_state(PlayerbotAI* botAI) { return new AutoVendorStateValue(botAI); }
 
     static UntypedValue* can_loot(PlayerbotAI* botAI) { return new CanLootValue(botAI); }
     static UntypedValue* available_loot(PlayerbotAI* botAI) { return new AvailableLootValue(botAI); }

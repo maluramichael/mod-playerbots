@@ -17,6 +17,7 @@
 #        MOUNT
 #        GEAR
 #        LOOTING
+#        AUTO VENDOR
 #        TIMERS
 #        DISTANCES
 #        THRESHOLDS
@@ -333,6 +334,34 @@ AiPlayerbot.LootRollDisenchant = 0
 # Other:
 # Shallow Grave (Zul'Farrak) = 128308/128403, Grim Guzzler Boar (Blackrock Depths) = 165739, Dark Iron Ale Mug (Blackrock Depths) = 165738, Father Flame (Blackrock Spire) = 175245, Unforged Runic Breastplate (Blackrock Spire) = 175970, Blacksmithing Plans (Stratholme) = 176325/176327
 AiPlayerbot.DisallowedGameObjects = 176213,17155,2656,74448,19020,3719,3658,3705,3706,105579,75293,2857,179490,141596,160836,160845,179516,176224,181085,176112,128308,128403,165739,165738,175245,175970,176325,176327,123329,2560
+
+#
+#
+####################################################################################################
+
+####################################################################################################
+# AUTO VENDOR
+#
+
+# Bots with a real player as master (altbots, bots invited into a player's group) walk to a nearby vendor on their
+# own, sell vendor trash, restock food and drink and repair their gear, then go back to following.
+# A vendor run starts when the bot needs something (sellable items, fewer than 10 usable food or drink, gear below
+# 90% durability) and a friendly vendor or repair NPC is within AiPlayerbot.AutoVendor.Range of both the bot and its
+# master. It only happens in the open world (never in dungeons, raids, battlegrounds or arenas) and never while the
+# bot is in combat, flying, on a taxi or has the "stay" or "guard" strategy.
+# The bots use the same sell/buy/repair logic as the "s vendor", "b vendor" and "repair" chat commands (they sell the
+# items the "sell" command would sell).
+# Default: 1 (enabled)
+AiPlayerbot.AutoVendor.Enable = 1
+
+# Maximum distance in yards between a vendor and both the bot and its master for a vendor run to start
+# Default: 45
+AiPlayerbot.AutoVendor.Range = 45
+
+# Minimum time in seconds between two vendor runs of the same bot (also applied after a run that was given up;
+# a run that changed nothing waits three times as long)
+# Default: 180
+AiPlayerbot.AutoVendor.CooldownSec = 180
 
 #
 #

@@ -585,6 +585,11 @@ void AiFactory::AddDefaultNonCombatStrategies(Player* player, PlayerbotAI* const
     {
         nonCombatEngine->addStrategiesNoInit("nc", "food", "chat", "follow", "default", "force rebuff", "quest", "loot",
                                             "gather", "duel", "pvp", "buff", "mount", "emote", nullptr);
+
+        // Bots with a real player master (altbots, bots invited by a player) visit nearby vendors on their own.
+        // Random world bots without a master never get it.
+        if (sPlayerbotAIConfig.autoVendorEnabled && facade && IsRealPlayer(facade->GetMaster()))
+            nonCombatEngine->addStrategy("auto vendor", false);
     }
 
     if (sPlayerbotAIConfig.autoSaveMana && PlayerbotAI::IsHeal(player, true))

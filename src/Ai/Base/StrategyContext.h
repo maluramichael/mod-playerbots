@@ -9,6 +9,7 @@
 
 #include "AggressiveStrategy.h"
 #include "AttackEnemyPlayersStrategy.h"
+#include "AutoVendorStrategy.h"
 #include "BattlegroundStrategy.h"
 #include "CastTimeStrategy.h"
 #include "ChatCommandHandlerStrategy.h"
@@ -65,6 +66,7 @@ public:
         creators["racials"] = &StrategyContext::racials;
         creators["loot"] = &StrategyContext::loot;
         creators["gather"] = &StrategyContext::gather;
+        creators["auto vendor"] = &StrategyContext::auto_vendor;
         creators["emote"] = &StrategyContext::emote;
         creators["passive"] = &StrategyContext::passive;
         creators["aggressive"] = &StrategyContext::aggressive;
@@ -153,6 +155,7 @@ private:
     static Strategy* racials(PlayerbotAI* botAI) { return new RacialsStrategy(botAI); }
     static Strategy* loot(PlayerbotAI* botAI) { return new LootNonCombatStrategy(botAI); }
     static Strategy* gather(PlayerbotAI* botAI) { return new GatherStrategy(botAI); }
+    static Strategy* auto_vendor(PlayerbotAI* botAI) { return new AutoVendorStrategy(botAI); }
     static Strategy* emote(PlayerbotAI* botAI) { return new EmoteStrategy(botAI); }
     static Strategy* passive(PlayerbotAI* botAI) { return new PassiveStrategy(botAI); }
     static Strategy* aggressive(PlayerbotAI* botAI) { return new AggressiveStrategy(botAI); }
