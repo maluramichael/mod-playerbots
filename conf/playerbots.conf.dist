@@ -583,6 +583,13 @@ AiPlayerbot.AltMaintenanceConsumables = 1
 AiPlayerbot.AltMaintenancePotions = 1
 
 AiPlayerbot.AltMaintenanceBags = 1
+
+# Item id of the bag the factory puts into every empty bag slot of a bot (init, autogear, maintenance).
+# 51809 = Portable Hole (24 slots), 4496 = Small Brown Pouch (6 slots), 4498 = Brown Leather Satchel (8 slots).
+# 0 = the factory does not give bags at all. Bags a bot already has are never replaced by maintenance.
+# Default: 51809
+AiPlayerbot.BagItemId = 51809
+
 AiPlayerbot.AltMaintenanceMounts = 1
 AiPlayerbot.AltMaintenanceSkills = 1
 
