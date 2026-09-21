@@ -2780,6 +2780,14 @@ AiPlayerbot.SummonAtInnkeepersEnabled = 1
 #        lowest rank. Requires DadMode.Enabled = 1 and DadMode.Bots.ForceGuildJoin = 1.
 #        Default: 0 (off - use stock random bot-guild assignment)
 #
+#    DadMode.Bots.GuildIdMax
+#        Optional cap on DadMode.Bots.GuildId: once the target guild has this many members, stop
+#        forcing bots into it and let the rest fall through to the stock random bot-guild assignment
+#        (which needs AiPlayerbot.RandomBotGuildCount > 0). 0 = no cap (every bot joins the target
+#        guild). Use it to keep e.g. 100 bots in the player's guild while the remaining fleet
+#        populates random guilds.
+#        Default: 0 (no cap)
+#
 #    DadMode.Bots.GatherEnabled
 #        Enable the existing "gather" non-combat strategy on random bots at login so they harvest
 #        herb/ore/skinning nodes while roaming.
@@ -2794,5 +2802,6 @@ AiPlayerbot.SummonAtInnkeepersEnabled = 1
 
 DadMode.Bots.ForceGuildJoin = 0
 DadMode.Bots.GuildId = 0
+DadMode.Bots.GuildIdMax = 0
 DadMode.Bots.GatherEnabled = 0
 DadMode.Purge.PerTick = 20

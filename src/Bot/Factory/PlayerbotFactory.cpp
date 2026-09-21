@@ -4911,19 +4911,29 @@ void PlayerbotFactory::InitGuild()
         {
             if (Guild* targetGuild = sGuildMgr->GetGuildById(targetGuildId))
             {
-                if (targetGuild->AddMember(bot->GetGUID()))
+                // Optional cap: once the target guild has this many members, stop forcing bots
+                // into it and let the rest fall through to the stock random bot-guild assignment.
+                // 0 = no cap (every bot goes to the target guild). Lets you keep e.g. 100 bots in
+                // the player's guild while the remaining fleet populates random guilds.
+                uint32 targetMax = sConfigMgr->GetOption<uint32>("DadMode.Bots.GuildIdMax", 0);
+                if (targetMax == 0 || targetGuild->GetMemberCount() < targetMax)
                 {
-                    PlayerbotGuildMgr::instance().OnGuildUpdate(targetGuild);
-                    if (bot->GetLevel() > 9 && !bot->HasItemCount(5976, 1))
-                        StoreItem(5976, 1);
+                    if (targetGuild->AddMember(bot->GetGUID()))
+                    {
+                        PlayerbotGuildMgr::instance().OnGuildUpdate(targetGuild);
+                        if (bot->GetLevel() > 9 && !bot->HasItemCount(5976, 1))
+                            StoreItem(5976, 1);
+                    }
+                    else
+                        LOG_ERROR("playerbots", "Bot {} failed to join DadMode target guild {}.",
+                            bot->GetName(), targetGuildId);
+                    return;
                 }
-                else
-                    LOG_ERROR("playerbots", "Bot {} failed to join DadMode target guild {}.",
-                        bot->GetName(), targetGuildId);
-                return;
+                // cap reached: fall through to stock random bot-guild assignment below
             }
-            LOG_ERROR("playerbots", "DadMode.Bots.GuildId {} does not exist; falling back to stock guild assignment.",
-                targetGuildId);
+            else
+                LOG_ERROR("playerbots", "DadMode.Bots.GuildId {} does not exist; falling back to stock guild assignment.",
+                    targetGuildId);
         }
     }
 
