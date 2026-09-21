@@ -11,6 +11,7 @@
 #include "AiObjectContext.h"
 #include "ArenaTeam.h"
 #include "ArenaTeamMgr.h"
+#include "Config.h"
 #include "DBCStores.h"
 #include "DBCStructure.h"
 #include "GuildMgr.h"
@@ -4894,6 +4895,37 @@ void PlayerbotFactory::InitGuild()
 
     if (sPlayerbotAIConfig.deleteRandomBotGuilds)
         return;
+
+    // DadMode: force every guildless random bot into one specific, already-existing
+    // guild (by guildid) instead of the stock random bot-guild assignment. This is
+    // how the whole random-bot fleet is gathered into a real player's guild (e.g.
+    // "Muffins"). The stock AssignToGuild() deliberately skips real-player guilds,
+    // so this targeted path is the only way to place bots there. Bots join at the
+    // guild's lowest rank (GUILD_RANK_NONE). Cross-faction membership relies on the
+    // server's AllowTwoSide.Interaction.Guild setting.
+    if (sConfigMgr->GetOption<bool>("DadMode.Enabled", false) &&
+        sConfigMgr->GetOption<bool>("DadMode.Bots.ForceGuildJoin", false))
+    {
+        uint32 targetGuildId = sConfigMgr->GetOption<uint32>("DadMode.Bots.GuildId", 0);
+        if (targetGuildId)
+        {
+            if (Guild* targetGuild = sGuildMgr->GetGuildById(targetGuildId))
+            {
+                if (targetGuild->AddMember(bot->GetGUID()))
+                {
+                    PlayerbotGuildMgr::instance().OnGuildUpdate(targetGuild);
+                    if (bot->GetLevel() > 9 && !bot->HasItemCount(5976, 1))
+                        StoreItem(5976, 1);
+                }
+                else
+                    LOG_ERROR("playerbots", "Bot {} failed to join DadMode target guild {}.",
+                        bot->GetName(), targetGuildId);
+                return;
+            }
+            LOG_ERROR("playerbots", "DadMode.Bots.GuildId {} does not exist; falling back to stock guild assignment.",
+                targetGuildId);
+        }
+    }
 
     std::string guildName = PlayerbotGuildMgr::instance().AssignToGuild(bot);
     if (guildName.empty())

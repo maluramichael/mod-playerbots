@@ -2771,6 +2771,15 @@ AiPlayerbot.SummonAtInnkeepersEnabled = 1
 #        Force random bots to join a guild at login even when AiPlayerbot.RandomBotGuildCount is 0.
 #        Default: 0 (off)
 #
+#    DadMode.Bots.GuildId
+#        If > 0, force EVERY guildless random bot into this one specific, already-existing guild
+#        (by guildid) at login, instead of the stock behavior of creating/joining random bot-only
+#        guilds. Use this to gather the whole random-bot fleet into a real player's guild (e.g. set
+#        it to the "Muffins" guild id). Cross-faction guild membership must be allowed on the server
+#        (AllowTwoSide.Interaction.Guild) if the fleet is mixed-faction. Bots join at the guild's
+#        lowest rank. Requires DadMode.Enabled = 1 and DadMode.Bots.ForceGuildJoin = 1.
+#        Default: 0 (off - use stock random bot-guild assignment)
+#
 #    DadMode.Bots.GatherEnabled
 #        Enable the existing "gather" non-combat strategy on random bots at login so they harvest
 #        herb/ore/skinning nodes while roaming.
@@ -2784,5 +2793,6 @@ AiPlayerbot.SummonAtInnkeepersEnabled = 1
 ###################################################################################################
 
 DadMode.Bots.ForceGuildJoin = 0
+DadMode.Bots.GuildId = 0
 DadMode.Bots.GatherEnabled = 0
 DadMode.Purge.PerTick = 20
